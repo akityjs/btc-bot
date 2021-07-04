@@ -1,30 +1,35 @@
-const { 
-    TOKEN,
-    BTCKEY
-} = require("./config");
+const { TOKEN, BTCKEY } = require('./config.json');
 
-const { VK, CallbackService } = require('vk-io'); 
-const { HearManager } = require('@vk-io/hear'); 
-const btcValue = require('btc-value'); 
+const { VK, CallbackService } = require('vk-io');
+const { HearManager } = require('@vk-io/hear');
+const getBtcValue = require('btc-value');
 
 const vk = new VK({
-	token: TOKEN
+  token: TOKEN,
 });
 
-btcValue.setApiKey(BTCKEY);
+getBtcValue.setApiKey(BTCKEY);
 
-const hearManager = new HearManager(); 
-const callbackService = new CallbackService(); 
+const hearManager = new HearManager();
 
 vk.updates.on('message_new', hearManager.middleware);
 
-vk.updates.startPolling()
-    .then(() => console.log('author: @akityjs'), console.log(`[$] Bot started.`));
+hearManager.hear('/btc', async (ctx) => {
+  try {
+    const btcResult = await getBtcValue();
 
-hearManager.hear('/btc', async (ctx) => { 
-    btcValue().then(value => {
-        ctx.send('Курс биткоина в данный момент = ' + value + '$');
-    })
+    await ctx.send(`Курс биткоина в данный момент = ${btcResult}$`);
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-vk.updates.start().catch(console.error);
+void (async () => {
+  try {
+    console.log('author: @akityjs');
+    await vk.updates.startPolling();
+    console.log(`[$] Bot started.`);
+  } catch (err) {
+    console.error(err);
+  }
+})();
